@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+
+<html lang="de">
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DemmeLatex</title>
+    <link rel="stylesheet" href="homestyle.css" type="text/css">
+  </head>
+
+  <body>
+    <img class="background" src="/Bilder/Picture.jpg" alt="">
+
+    <div class="menü">
+        <div class="symbol">
+            <a href="#" target="_blank">
+                <img class="logo" src="Bilder/Logo.png" alt="">
+            </a>
+            <div class="demmelatex">
+                DemmeLatex
+            </div>
+        </div>
+        <a class="menülink1" href="#">TikzPicture</a>
+        <a class="menülink2" href="#">Chemie</a>
+        <a class="menülink3" href="#">Mathe</a>
+    </div>
+
+    <!--Plots-->
+    <h2 class="Beschriftung">3D-Plot der Funktion </h2>
+    <div class="example" >
+        <iframe id="plot" src="PDF/1.pdf" frameborder="0"></iframe>
+        <pre style="overflow:auto">
+\begin{tikzpicture}
+    \begin{axis}[view={40}{30},
+                 zlabel=$z$,
+                 xlabel=$x$,
+                 ylabel=$y$,]
+        \addplot3[color=red,
+                  mesh,
+                  samples=60]
+                 {x^2 - y^2};
+    \end{axis}
+\end{tikzpicture}
+        </pre>
+    </div>
+
+    <h2 class="Beschriftung">Entlang der z-Achse gestauchter 3D-Plot der Funktion </h2>
+    <div class="example" >
+        <iframe id="plot" src="PDF/2.pdf" frameborder="0"></iframe>
+        <pre style="overflow:auto">
+\begin{tikzpicture}
+    \begin{axis}[xmin=-3, xmax=3,
+                 ymin=-3, ymax=3,
+                 zmin=0, zmax=2,
+                 view={320}{20},
+                 zlabel=$z$, xlabel=$x$, ylabel=$y$,
+                 unit vector ratio = 1.5 1.5 1]
+        \addplot3[mesh,
+                  surf,
+                  shader=faceted,
+                  samples=60,
+                  domain=-3:3]
+                 {(x^2+2*y^2)*exp(-x^2-y^2+1)};
+    \end{axis}
+\end{tikzpicture}
+        </pre>
+    </div>
+
+    <!--Menü-->
+    <div>
+        <a href="#" target="_blank">
+            <img class="menuimages" src="Bilder/LMU.png" alt="">
+        </a>
+    </div>
+
+    <div>
+        <a href="#" target="_blank">
+            <img class="menuimages" src="Bilder/Latex.png" alt="">
+        </a>
+    </div>
+
+    <div>
+        <a href="#" target="_blank">
+            <img class="menuimages" src="Bilder/Resume.jpg" alt="">
+        </a>
+    </div>
+
+    <!--Bottom Navigation Bar-->
+    <div class="navbar">
+        <div>
+            <a href="#" target="_blank">
+                <img class="logo2" src="Bilder/Logo.png" alt="">
+            </a>
+        </div>
+        <div class="kontakt">
+            <pre>
+                0176 52879034
+                demmelatex@gmail.com
+                https://demmelatex.netlify.app/
+            </pre>
+        </div>
+    </div>
+
+  </body>
+
+</html>

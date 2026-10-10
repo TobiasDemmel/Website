@@ -1,0 +1,684 @@
+\documentclass[11pt]{article}
+
+% Text
+\usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[official]{eurosym}
+\usepackage{enumitem}
+\usepackage{caption}
+    \captionsetup{format=hang}
+%\usepackage[center]{titlesec}
+%\setcounter{secnumdepth}{0}
+\usepackage[dvipsnames]{xcolor}
+    \colorlet{darkgreen}{green!40!black}
+    \colorlet{darkyellow}{yellow!87!black}
+    \colorlet{DarkBrown}{Brown!60!white}
+    \colorlet{YellowBrown}{Brown!40!Yellow}
+    \colorlet{darkblue}{blue!60!black}
+    \colorlet{whiteyellow}{darkyellow!60!white}
+    
+    \colorlet{mylightblue}{blue!20}
+    \colorlet{myblue}{blue!50!black}
+    \colorlet{mydarkblue}{blue!30!black}
+    \colorlet{mylightred}{red!10}
+    \colorlet{myred}{red!50!black}
+    \colorlet{mydarkred}{red!60!black}
+    \colorlet{mydarkgreen}{green!30!black}
+\usepackage{contour}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,
+            linkcolor=black,
+            urlcolor=black}
+\parindent0cm
+%\pagestyle{empty}
+
+% Maths
+\usepackage{amssymb, amsmath, mathtools, siunitx, bm}
+\usepackage{graphicx}
+\usepackage[a4paper, left=2cm, right=2cm, top=2cm]{geometry}
+\usepackage{makecell}
+\usepackage{vcell}
+\usepackage{booktabs}
+\usepackage{float}
+%    \restylefloat{table}
+\usepackage{pgfplots, pgfplotstable, filecontents}
+\pgfplotsset{compat=1.18, width=10cm}
+    \newcommand{\linregAddplot}[2][]{%
+      % Will plot a linear regression from a datafile.
+      %
+      % Usage: \linregAddplot[<options>]{<file>}
+      % where <options> is the same options as for \addplot+ and <file> is a simple
+      % datafile gnuplot can read.
+      %
+      % The macros \linregSlope, \linregIntercept and \linregRsq are available after
+      % \linregAddplot has been called. They can be used in
+      % \addlegendentry{}.
+    
+        \addplot+[raw gnuplot, no markers, #1] gnuplot {
+        stats '#2' nooutput; % Calculate a bunch of statistical values
+        plot [x=STATS_min_x:STATS_max_x] STATS_slope*x + STATS_intercept;
+        set print "#2.linreg";
+        print STATS_slope; % Write the parameters to file
+        print STATS_intercept;
+        print STATS_correlation;
+      };
+      \IfFileExists{./#2.linreg}{
+        \expandafter\newread\csname read#2\endcsname % Open the file again
+        \expandafter\openin\csname read#2\endcsname=#2.linreg
+    
+        % Read the values from the file
+        \expandafter\read\csname read#2\endcsname to \mytmp
+        % and pprint them to tmp macros
+        \pgfmathprintnumberto{\mytmp}{\linregSlope}
+    
+        \expandafter\read\csname read#2\endcsname to \mytmp
+        \pgfmathprintnumberto{\mytmp}{\linregIntercept}
+    
+        \expandafter\read\csname read#2\endcsname to \mytmp
+        % Square the r value before pprinting
+        \pgfmathpow{\mytmp}{2}
+        \pgfmathprintnumberto[precision=5]{\pgfmathresult}{\linregRsq}
+          }{%
+        \def\linregSlope{NaN}
+        \def\linregIntercept{NaN}
+        \def\linregRsq{NaN}
+        \message{You need to run LaTeX again to get you linear regression labels right.}
+      }
+    }
+
+% Chemistry
+\usepackage{modiagram}
+\usepackage{chemfig}
+\usepackage[version=4]{mhchem}
+\usepackage{chemformula}
+\usepackage{elements}
+\usepackage{isotope}
+
+% Grafics
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,
+                arrows,
+                positioning,
+                hobby,
+                arrows.meta,
+                calc,
+                intersections,
+                decorations.markings}
+\usepackage{ifthen}
+
+% Born-Haber Kreisprozess
+\tikzset{box/.style={rectangle, minimum size=5mm, draw=black, fill=black!10}}
+\tikzset{arrow/.style={->, very thick, >=stealth}}
+
+% Phasendiagramm
+\tikzset{>={Latex[length=4,width=4]}}
+\tikzset{midarr/.style={decoration={markings,
+                                    mark=at position #1 with {\arrow{stealth}}},
+                                    postaction={decorate}},
+         midarr/.default=0.5}
+\def\tick#1#2{\draw[thick] (#1) ++ (#2:0.03*\ymax) --++ (#2-180:0.06*\ymax)}
+\newcommand\namebond[5]
+                    [-1pt]
+                    {\chemmove{\path(#2)--(#3)node[midway,
+                                                   #4,
+                                                   yshift=#1,
+                                                   black!60]
+                                                  {#5};}}
+\newcommand\arcbetweennodes[3]
+                           {\pgfmathanglebetweenpoints{\pgfpointanchor{#1}{center}}
+                                                      {\pgfpointanchor{#2}{center}}
+                            \let#3\pgfmathresult}
+\newcommand\arclabel[6]
+                    [red,
+                     -stealth,
+                     shorten <=1pt,
+                     shorten >=1pt]
+                    {\chemmove{\arcbetweennodes{#4}{#3}\anglestart
+                               \arcbetweennodes{#4}{#5}\angleend
+                               \ifdim\anglestart pt>\angleend pt \pgfmathsetmacro\anglestart{\anglestart-360}\fi
+                               \draw[#1]
+                                    ([shift=(\anglestart:#2)]#4)arc
+                                    [start angle=\anglestart,
+                                     end angle=\angleend,
+                                     radius=#2];
+                               \pgfmathsetmacro\anglestart{(\anglestart+\angleend)/2}
+                               \node[shift=(\anglestart:#2+1pt)#4,
+                                     anchor=\anglestart+180,
+                                     inner sep=0pt,
+                                     outer sep=0pt]at
+                                    (#4)
+                                    {#6};}}
+                                    
+% Orbitale
+\pgfdeclarelayer{background}
+\pgfdeclarelayer{foreground}
+
+\pgfsetlayers{background,main,foreground}
+
+\colorlet{electron}{black!100}                                         % Elektronenfarbe
+
+\tikzset{px/.style={thick,fill opacity=1}}
+\tikzset{px 0/.style={px,fill=white}}                                  % px-Orbitalfarbe (0 Elektronen)
+\tikzset{px 1/.style={px,fill=white}}                                  % px-Orbitalfarbe (1 Elektron)
+\tikzset{px 2/.style={px,fill=white}}                                  % px-Orbitalfarbe (2 Elektronen)
+
+\tikzset{py/.style={thick,fill opacity=.5}}
+\tikzset{py 0/.style={py}}                                             % py-Orbitalfarbe (0 Elektronen)
+\tikzset{py 1/.style={py}}                                             % py-Orbitalfarbe (1 Elektron)
+\tikzset{py 2/.style={py}}                                             % py-Orbitalfarbe (2 Elektron)
+
+\tikzset{pz/.style={thick,fill opacity=1}}
+\tikzset{pz 0/.style={pz,fill=white}}                                  % pz-Orbitalfarbe (0 Elektronen)
+\tikzset{pz 1/.style={pz,fill=white}}                                  % pz-Orbitalfarbe (1 Elektron)
+\tikzset{pz 2/.style={pz,fill=white}}                                  % pz-Orbitalfarbe (2 Elektron)
+
+\tikzset{spx/.style={thick,fill opacity=1}}
+\tikzset{spx 0/.style={spx,fill=white}}                                 % sp-Orbitalfarbe (0 Elektronen)
+\tikzset{spx 1/.style={spx,fill=white}}                                 % sp-Orbitalfarbe (1 Elektron)
+\tikzset{spx 2/.style={spx,fill=white}}                                 % sp-Orbitalfarbe (2 Elektron)
+
+\tikzset{atomcore/.style={shape=circle,
+                          thick,
+                          draw=black,                                  % Atomkernfarbe
+                          minimum size=7mm,                            % Atomkerngröße
+                          font=\large,                                 % Atomkernschriftgröße
+                          inner sep=0pt}}
+
+\def\pxheight{1.75}                                                    % px-Orbitalhöhe
+\def\pxwidth{.3}                                                       % px-Orbitalweite
+
+\def\pyheight{1.625}                                                   % py-Orbitalhöhe
+\def\pywidth{.4375}                                                    % py-Orbitalweite
+
+\def\pzheight{1.625}                                                   % pz-Orbitalhöhe
+\def\pzwidth{.4375}                                                    % pz-Orbitalweite
+
+\def\spxheight{1.75}                                                   % psx-Orbitalhöhe
+\def\spxwidth{.3}                                                      % psx-Orbitalweite
+
+\newcommand{\px}
+           [3]
+           {\begin{scope}[rotate=#1,shift=(#2)]
+                \coordinate (c1)   at (-\pxwidth    ,.6*\pxheight);
+                \coordinate (c2)   at (-\pxwidth    ,\pxheight);
+                \coordinate (c3)   at (\pxwidth     ,\pxheight);
+                \coordinate (c4)   at (\pxwidth     ,.6*\pxheight);
+                \coordinate (top)  at (0            ,\pxheight);
+        
+                \coordinate (e1)   at (.42*\pxwidth ,.52*\pxheight);
+                \coordinate (e2)   at (-.5*\pxwidth ,.68*\pxheight);
+                \coordinate (e3)   at (-.36*\pxwidth,.7*\pxheight);
+                \coordinate (e4)   at (.56*\pxwidth ,.54*\pxheight);
+            \end{scope}
+            
+            \begin{pgfonlayer}{background}
+                \draw[px #3] (#2) .. controls (c1) and (c2) .. (top) ..
+                                     controls (c3) and (c4) .. (#2);
+            \end{pgfonlayer}
+            
+            \ifnum#3=1
+                \draw[arrows = {-Stealth[left]}] (e1) -- (e2);
+            \else
+            \ifnum#3=2
+                \draw[arrows = {-Stealth[left]}] (e1) -- (e2);
+                \draw[arrows = {-Stealth[left]}] (e3) -- (e4);
+            \fi
+            \fi}
+\newcommand{\py}
+           [3]
+           {\begin{scope}[rotate=#1,shift=(#2)]
+                \coordinate (c1)  at (-\pywidth      ,.6*\pyheight);
+                \coordinate (c2)  at (-\pywidth      ,\pyheight);
+                \coordinate (c3)  at (\pywidth       ,\pyheight);
+                \coordinate (c4)  at (\pywidth       ,.6*\pyheight);
+                \coordinate (top) at (0              ,\pyheight);
+        
+                \coordinate (e1)   at (.525*\pywidth ,.6*\pyheight);
+                \coordinate (e2)   at (-.475*\pywidth,.6*\pyheight);
+                \coordinate (e3)   at (-.475*\pywidth,.63*\pyheight);
+                \coordinate (e4)   at (.525*\pywidth ,.63*\pyheight);
+            \end{scope}
+            
+            \begin{pgfonlayer}{background}
+                \draw[py #3] (#2) .. controls (c1) and (c2) .. (top) ..
+                                     controls (c3) and (c4) .. (#2);
+            \end{pgfonlayer}
+            
+            \ifnum#3=1
+                \draw[arrows = {-Stealth[left]}] (e1) -- (e2);
+            \else
+            \ifnum#3=2
+                \draw[arrows = {-Stealth[left]}] (e1) -- (e2);
+                \draw[arrows = {-Stealth[left]}] (e3) -- (e4);
+            \fi
+            \fi}
+\newcommand{\pz}
+           [3]
+           {\begin{scope}[rotate=#1,shift=(#2)]
+                \coordinate (c1)  at (-\pzwidth     ,.6*\pzheight);
+                \coordinate (c2)  at (-\pzwidth     ,\pzheight);
+                \coordinate (c3)  at (\pzwidth      ,\pzheight);
+                \coordinate (c4)  at (\pzwidth      ,.6*\pzheight);
+                \coordinate (top) at (0             ,\pzheight);
+        
+                \coordinate (e1)  at (-.075*\pzwidth,.45*\pzheight);
+                \coordinate (e2)  at (-.075*\pzwidth,.7*\pzheight);
+                \coordinate (e3)  at (.075*\pzwidth ,.7*\pzheight);
+                \coordinate (e4)  at (.075*\pzwidth ,.45*\pzheight);
+            \end{scope}
+            
+            \begin{pgfonlayer}{background}
+                \draw[pz #3] (#2) .. controls (c1) and (c2) .. (top) ..
+                                     controls (c3) and (c4) .. (#2);
+            \end{pgfonlayer}
+            
+            \ifnum#3=1
+                \draw[arrows = {-Stealth[left]}] (e1) -- (e2);
+            \else
+            \ifnum#3=2
+                \draw[arrows = {-Stealth[left]}] (e1) -- (e2);
+                \draw[arrows = {-Stealth[left]}] (e3) -- (e4);
+            \fi
+            \fi}
+\newcommand{\spx}
+           [3]
+           {\begin{scope}[rotate=#1,shift=(#2)]
+                \coordinate (c1)   at (-\spxwidth    ,.6*\spxheight);
+                \coordinate (c2)   at (-\spxwidth    ,\spxheight);
+                \coordinate (c3)   at (\spxwidth     ,\spxheight);
+                \coordinate (c4)   at (\spxwidth     ,.6*\spxheight);
+                \coordinate (top)  at (0            ,\spxheight);
+        
+                \coordinate (e1)   at (-.5*\spxwidth ,.6*\spxheight);
+                \coordinate (e2)   at (.35*\spxwidth ,.75*\spxheight);
+                \coordinate (e3)   at (.5*\spxwidth ,.72*\spxheight);
+                \coordinate (e4)   at (-.4*\spxwidth ,.57*\spxheight);
+            \end{scope}
+            
+            \begin{pgfonlayer}{background}
+                \draw[spx #3] (#2) .. controls (c1) and (c2) .. (top) ..
+                                     controls (c3) and (c4) .. (#2);
+            \end{pgfonlayer}
+            
+            \ifnum#3=1
+                \draw[arrows = {-Stealth[left]}] (e1) -- (e2);
+            \else
+            \ifnum#3=2
+                \draw[arrows = {-Stealth[left]}] (e1) -- (e2);
+                \draw[arrows = {-Stealth[left]}] (e3) -- (e4);
+            \fi
+            \fi}
+\newcommand{\Atom}
+           [3]
+           [AtomNode]
+           {\node[atomcore] (#1) {\ce{#2}}; \foreach \ang/\anchor/\n in {#3} {\px{\ang}{#1.\anchor}{\n}}}
+\newcommand{\drawpy}
+           [3]
+           [AtomNode]
+           {                                \foreach \ang/\anchor/\n in {#3} {\py{\ang}{#1.\anchor}{\n}}}
+\newcommand{\drawpz}
+           [3]
+           [AtomNode]
+           {                                \foreach \ang/\anchor/\n in {#3} {\pz{\ang}{#1.\anchor}{\n}}}
+\newcommand{\drawspx}
+           [3]
+           [AtomNode]
+           {                                \foreach \ang/\anchor/\n in {#3} {\spx{\ang}{#1.\anchor}{\n}}}
+           
+% Erste Seite
+\title{Mathe}
+\author{Tobias Demmel}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+
+\section{Plots}
+
+\subsection{2D-Plot einer Funktion}
+
+    \begin{figure}[!ht]
+        \centering
+        \scalebox{0.75}{
+        \begin{tikzpicture}
+            \begin{axis}[xmin=-2.5, xmax=2.5,
+                         ymin=-5, ymax=5,
+                         axis lines=middle,
+                         xlabel=$x$, ylabel=$y$,
+                         title={$\boldsymbol{x^2}$ und $\boldsymbol{1-x^2}$}]
+                \addplot[color=red, dashed, mark=*, samples=50, domain=-1.75:1]{x^2};
+                \addplot[color=blue, samples=50]{1-x^2};
+            \end{axis}
+        \end{tikzpicture}
+        }
+        \caption{2D-Plot}
+    \end{figure}
+    
+\subsection{3D-Plot einer Funktion}
+
+    \begin{figure}[!ht]
+        \centering
+        \scalebox{0.75}{
+        \begin{tikzpicture}
+            \begin{axis}[view={40}{30},
+                         zlabel=$z$,
+                         xlabel=$x$,
+                         ylabel=$y$,]
+                \addplot3[color=red,
+                          mesh,
+                          samples=25]
+                         {x^2 - y^2};
+            \end{axis}
+        \end{tikzpicture}
+        }
+        \caption{3D-Plot}
+    \end{figure}
+    
+    \begin{figure}[!ht]
+        \centering
+        \scalebox{.75}{
+        \begin{tikzpicture}
+            \begin{axis}[xmin=-3, xmax=3,
+                         ymin=-3, ymax=3,
+                         zmin=0, zmax=2,
+                         view={320}{20},
+                         zlabel=$z$, xlabel=$x$, ylabel=$y$,
+                         unit vector ratio = 1.5 1.5 1]
+                \addplot3[mesh,
+                          surf,
+                          shader=faceted,
+                          samples=40,
+                          domain=-3:3]
+                         {(x^2+2*y^2)*exp(-x^2-y^2+1)};
+            \end{axis}
+        \end{tikzpicture}
+        }
+        \caption{Stauchung (z-Achse)}
+    \end{figure}
+    
+\subsection{Vektorfeld}
+
+    \begin{figure}[H]
+        \centering
+        \scalebox{.625}{
+        \begin{tikzpicture}
+            \begin{axis} [view = {0}{90},
+                          xmin=-1, xmax=1,
+                          ymin=-1, ymax=1,
+                          unit vector ratio = 2 1]
+                \addplot3[quiver = {u = {x},
+                                    v = {y},
+                                    scale arrows = 0.25},
+                          -stealth,
+                          domain = -3:3]
+                         {0};
+            \end{axis}
+        \end{tikzpicture}
+        }
+        \caption{Vektorfeld}
+    \end{figure}
+    
+\subsection{2D-Plot einer Funktion}
+
+    \begin{filecontents}{data.dat}
+        x    y    ex   ey   uy   ly
+        2.92 4.69 0.2  0    4.69 4.69
+        3.00 4.33 0.15 0.05 4.38 4.28
+        3.10 3.91 0.1  0.1  4.01 3.81
+        3.19 3.47 0.05 0.15 3.62 3.32
+        3.30 2.94 0    0.2  3.14 2.74
+    \end{filecontents}
+    \begin{figure}[!ht]
+        \centering
+        \scalebox{.75}{
+        \begin{tikzpicture}
+            \begin{axis}[xmin=2.895, xmax=3.325,
+                         ymin=2, ymax=5.25,
+                         axis lines=middle,
+                         x post scale = 1.4,
+                         xlabel=$\frac{1}{T}\cdot10^{-3}/\frac{1}{K}$, ylabel=$\ln{(P/mbar)}$,
+                         x label style={at={(axis description cs:.5,-.1)}, anchor=north},
+                         y label style={at={(axis description cs:-.1,.5)}, rotate=90, anchor=south},
+                         xmajorgrids=false,
+                         ymajorgrids=false,
+                         grid style=dashed,
+                         legend pos=outer north east]
+                %Messwerte der Abkühlkurve
+                \addplot[only marks,
+                         mark = +] table
+                        {data.dat};
+                %Eichgerade (blau)
+                \addplot[densely dotted,
+                         thick,
+                         blue] table
+                        [y={create col/linear regression={y=y}}]
+                        {data.dat} node
+                        [right,
+                         pos=0.25]
+                        {\scriptsize\qquad$\pgfmathprintnumber{\pgfplotstableregressiona} \cdot x \pgfmathprintnumber[print sign]{\pgfplotstableregressionb}$};
+                %Fehlerbalken
+                \addplot[error bars/.cd,
+                         x dir=both,
+                         x fixed =0.0125,
+                         y dir=both,
+                         y explicit] table
+                        [y error = ey,
+                         only marks]
+                        {data.dat};
+                %Obere Grenzgerade (rot)
+                \addplot[red,
+                         dotted] table
+                        [y={create col/linear regression={y=uy}}]
+                        {data.dat} node
+                        [right,
+                         pos=0.6]
+                        {\scriptsize\quad$\pgfmathprintnumber{\pgfplotstableregressiona} \cdot x \pgfmathprintnumber[print sign]{\pgfplotstableregressionb}$};
+                %Untere Grenzgerade (rot)
+                \addplot[red,
+                         dotted] table
+                        [y={create col/linear regression={y=ly}}]
+                        {data.dat} node
+                        [left,
+                         pos=0.875]
+                        {\scriptsize$\pgfmathprintnumber{\pgfplotstableregressiona} \cdot x \pgfmathprintnumber[print sign]{\pgfplotstableregressionb}$\quad\ };
+            \end{axis}
+        \end{tikzpicture}
+        }
+        \caption{\label{fig:Abb.2}Fehlerbalken}
+    \end{figure}
+\subsection{GnuPlot}
+    \begin{figure}[!ht]
+        \centering
+        \scalebox{.75}{
+        \begin{tikzpicture}
+            \begin{axis}[xmin=0, xmax=320,
+                         ymin=0, ymax=7.25,
+                         axis lines=middle,
+                         x post scale = 1.5,
+                         y post scale = 1.125,
+                         xlabel=$t/s$,
+                         ylabel=$\frac{\sigma_a^{NaOH} - \sigma}{\sigma - \sigma_a^{NaAc}}$,
+                         x label style={at={(axis description cs:.5,-.1)}, anchor=north},
+                         y label style={at={(axis description cs:-.075,.5)}, rotate=90, anchor=south},
+                         xmajorgrids=false,
+                         ymajorgrids=false,
+                         grid style=dashed,
+                         legend pos=north west]
+                %Messwerte bei 298.15K
+                \addplot[only marks,
+                         mark = x] table
+                        {298.txt};
+                %Eichgerade
+                \addplot[raw gnuplot,
+                         thick,
+                         red,
+                         dotted,
+                         mark=none] gnuplot
+                        {f(x)=a*x;
+                         a=1;
+                         set fit errorvariables;
+                         fit f(x) '298.txt' using 1:2 via a;
+                         plot [x=0:300] f(x);
+                         set print "parameters.dat";
+                         print a, a_err;} node
+                        [left,
+                         pos=0.625]
+                        {\pgfplotstableread{parameters.dat}\parameters\pgfplotstablegetelem{0}{0}\of\parameters \pgfmathsetmacro\paramA{\pgfplotsretval}$\frac{\sigma_a^{NaOH} - \sigma}{\sigma - \sigma_a^{NaAc}} = \pgfmathprintnumber{\paramA}\,\frac{1}{s} \cdot t\quad$};
+            \end{axis}
+        \end{tikzpicture}
+        }
+        \caption{Ursprungsgerade}
+    \end{figure}
+    
+    \begin{filecontents*}{data.csv}
+      X Y
+      1.000 0.00
+      -2.000 2.00
+      3.000 14
+    \end{filecontents*}
+    \begin{filecontents*}{data2.csv}
+      X Y
+      -1.000 0.00
+      -2.000 2.00
+      3.000 -3
+    \end{filecontents*}
+    
+    \begin{figure}[H]
+        \centering
+        \begin{tikzpicture}
+            \begin{axis}[xmin=-3, xmax=4,
+                         ymin=0, ymax=15,
+                         axis lines=middle,
+                         x post scale = 1.5,
+                         y post scale = 1.125,
+                         xlabel=$t/s$,
+                         ylabel=$\frac{\sigma_a^{NaOH} - \sigma}{\sigma - \sigma_a^{NaAc}}$,
+                         x label style={at={(axis description cs:.5,-.1)}, anchor=north},
+                         y label style={at={(axis description cs:-.075,.5)}, rotate=90, anchor=south},
+                         xmajorgrids=false,
+                         ymajorgrids=false,
+                         grid style=dashed,
+                         legend pos=north west]
+                \addplot[only marks] table {data.csv};
+                \addlegendentry{Data}
+            
+                \linregAddplot[blue]{data.csv}
+                \addlegendentry{$y=\linregSlope \cdot x + \linregIntercept$, ${R}^{2}=\linregRsq$}
+            
+            \end{axis}
+        \end{tikzpicture}
+        \caption{Steigung durch vereinfachenden Code in Präambel (s. PGfplotset)}
+    \end{figure}
+    \begin{figure}[H]
+            \centering
+            \begin{tikzpicture}
+                \begin{axis}[xmin=0, xmax=250,
+                             ymin=0, ymax=1.7,
+                             axis lines=middle,
+                             x post scale = 1.5,
+                             y post scale = 1.125,
+                             xlabel=$t/s$,
+                             ylabel=$\Delta E$,
+                             x label style={at={(axis description cs:.5,-.1)}, anchor=north},
+                             y label style={at={(axis description cs:-.075,.5)}, rotate=90, anchor=south},
+                             xmajorgrids=false,
+                             ymajorgrids=false,
+                             grid style=dashed,
+                             legend pos=north west,
+                             legend style={font=\tiny,
+                                           cells={anchor=west},
+                                           legend columns=2,
+                                           %at={(.75,-.225)},
+                                           draw=black}]
+                    % pH = 8.0 %%%%%%%%%%%%%%%%%%%%
+                    \addplot[only marks,
+                             MidnightBlue] table
+                            {pH80.txt};
+                    \addlegendentry{$pH = 8.0$}
+                    % pH = 8.0 - Eichgerade
+                    \addplot[raw gnuplot,
+                             no markers,
+                             MidnightBlue] gnuplot
+                            {% Calculate a bunch of statistical values
+                             stats 'pH80.txt';
+                             % plot the linear fit
+                             plot [x=0:240] STATS_slope*x + STATS_intercept;
+                             % Open a file to save the parameters into
+                             set print "values.dat";
+                             % Write the parameters to file
+                             print STATS_slope;
+                             print STATS_intercept;
+                             print STATS_correlation;
+                             x};
+                    % Open the file again
+                    \newread\myread
+                    \openin\myread=values.dat
+                    % Read the values from the file and pprint them to macros
+                    \read\myread to \mytmp \pgfmathprintnumberto{\mytmp}{\slope}
+                    \read\myread to \mytmp \pgfmathprintnumberto{\mytmp}{\intercept}
+                    % Print Legendentry
+                    \addlegendentry{$y=\slope \cdot x + \intercept$}
+                    
+                    % pH = 10.0 %%%%%%%%%%%%%%%%%%%%
+                    \addplot[only marks,
+                             DarkOrchid] table {pH100.txt};
+                    \addlegendentry{$pH = 10.0$}
+                    % pH = 10.0 - Eichgerade
+                    \addplot[raw gnuplot,
+                             no markers,
+                             DarkOrchid] gnuplot
+                            {stats 'pH100.txt';
+                             plot [x=0:240] STATS_slope*x + STATS_intercept;
+                             set print "values.dat";
+                             print STATS_slope;
+                             print STATS_intercept;
+                             print STATS_correlation;
+                             x};
+                    \newread\myread 
+                    \openin\myread=values.dat
+                    \read\myread to \mytmp \pgfmathprintnumberto{\mytmp}{\slopee} 
+                    \read\myread to \mytmp \pgfmathprintnumberto{\mytmp}{\interceptt}
+                    \addlegendentry{$y=\slopee \cdot x + \interceptt$}
+                \end{axis}
+            \end{tikzpicture}
+            \caption{Multiple slopes}
+        \end{figure}
+    
+\section{Others}
+
+    \begin{align*}
+        3\cdot2
+        &= 6\,\si{mm}
+        \\[1em]
+        &\left. 2x + \frac{2}{3}x^{\frac{3}{2}} + \frac{1}{x}\right|_{1}^{9}
+        \\
+        &y \cdot x(y)\Bigr|_{y_{1}}^{y_{2}}
+        \\
+        &2x + \frac{2}{3}x^{\frac{3}{2}} + \frac{1}{x}\Biggr|_{1}^{9}
+        \\[1em]
+        &\Delta_{\underset{\mathclap{\substack{\uparrow \\ \text{Cambustion}}}}{C}} H^{\circ\kern-0,525em-}_{298K}\qquad(10\,pt)
+        \\
+        &\Delta_{\underset{\mathclap{\substack{\uparrow \\ \text{Cambustion}}}}{C}} H^{\circ\kern-0,47em-}_{298K}\qquad(12\,pt)
+        \\
+        &\Delta_{\underset{\mathclap{\substack{\uparrow \\ \text{Cambustion}}}}{C}} H^{\circ\kern-0,65em-}_{298K}
+        \\[1em]
+        \AA
+        &\text{ oder }\si{\angstrom}
+        \\[1cm]
+        \si{\milli\litre}
+        \\
+        2\si{ml}
+        \\
+        \SI{2}{ml}
+        \\
+        2\,\text{ml}
+        \\
+        \SI{2}{\milli\l}
+    \end{align*}
+
+\end{document}
